@@ -99,8 +99,10 @@ class MainApplication(tk.Frame):
     def __init__(self, parent, *args, **kwargs):
         tk.Frame.__init__(self, parent, *args, **kwargs)
         self.main = Main(self)
+        self.parent = parent
         self.tools = Tools(self, self.main)
-       
+
+        
         self.main.pack()
         self.tools.pack()
  
@@ -117,6 +119,8 @@ if __name__ == "__main__":
     TEXTSPACING = 40
     root.geometry("{}x{}".format(DIMENSIONS[0],DIMENSIONS[1]))
     mw = MainApplication(root)
+    root.bind('<Return>',lambda e: mw.main.addName(mw.tools.getCurselection()))
+    root.bind('<BackSpace>',lambda e: mw.main.nextName())
     mw.pack(padx=10, pady=10)
     #root.after_idle(wm.checkForModuleUpdates)
     root.mainloop()
