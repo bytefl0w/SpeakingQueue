@@ -56,29 +56,55 @@ class Tools(Main):
         self.nameList = []
         self.parseFile()
         self.nlVar = tk.StringVar(value=self.nameList)
+        self.searchTerm = tk.StringVar()
+        self.searchTerm.trace("w", lambda name, index, mode: self.update_list())
 
         self.initFrames()
 
         self.scrollBar = ttk.Scrollbar(self.searchFrame, orient=tk.VERTICAL)
-        self.guiNameList = tk.Listbox(self.searchFrame, listvariable=self.nlVar, height=10, yscrollcommand=self.scrollBar.set)
+        self.guiNameList = tk.Listbox(self.searchFrame, listvariable=self.nlVar, height=10, yscrollcommand=self.scrollBar.set, selectmode=tk.SINGLE)
+        self.guiNameList.activate(1)
         self.buttons = [tk.Button(self.buttonFrame, padx = 5) for count in range(2)]
         self.buttons[0].config(text="Add", command=lambda: _main.addName(self.getCurselection()))
         self.buttons[1].config(text="Next", command=lambda: _main.nextName())
         self.scrollBar.config(command=self.guiNameList.yview)
+        self.searchBar = tk.Entry(self.searchFrame, textvariable=self.searchTerm)
 
         self.packMe()
 
+        self.update_list()
+
+    def update_list(self):
+        term = self.searchTerm.get()
+
+        self.guiNameList.delete(0, tk.END)
+
+        for item in self.nameList:
+            if len(term) == 0:
+                self.guiNameList.insert(tk.END, item)
+            if term.isupper():
+                if len(term) == 1:
+                    if item.split()[0][0] == term[0]:
+                        self.guiNameList.insert(tk.END, item)
+                elif len(term) == 2:
+                    if item.split()[0][0] == term[0] and item.split()[1][0] == term[1]:
+                        self.guiNameList.insert(tk.END, item)
+                    
+        self.guiNameList.select_set(0)
+
     def initFrames(self):
         self.buttonFrame = tk.Frame(self)
-        self.searchFrame = tk.Frame(self)
+        self.searchFrame = tk.Frame(self, height=400)
         
     def packMe(self):
-        self.searchFrame.pack(side=tk.LEFT, anchor="nw")
+        self.searchBar.pack(side=tk.BOTTOM, anchor="sw", fill=tk.X)
         self.scrollBar.pack(side=tk.LEFT, anchor="nw", fill=tk.Y)
         self.guiNameList.pack(side=tk.LEFT, anchor="nw")
+        self.searchFrame.pack(side=tk.LEFT, anchor="nw")
         self.buttonFrame.pack(side=tk.LEFT, anchor="nw")
         self.buttons[0].pack()
         self.buttons[1].pack()
+        
 
 
     def parseFile(self):
@@ -91,7 +117,8 @@ class Tools(Main):
 
     def getCurselection(self):
         items = self.guiNameList.curselection()
-        items = [self.nameList[int(item)] for item in items]
+        tempList = self.guiNameList.get(0,tk.END)
+        items = [tempList[int(item)] for item in items]
         return items
             
 # tk.Frame of the whole app 
@@ -120,7 +147,7 @@ if __name__ == "__main__":
     root.geometry("{}x{}".format(DIMENSIONS[0],DIMENSIONS[1]))
     mw = MainApplication(root)
     root.bind('<Return>',lambda e: mw.main.addName(mw.tools.getCurselection()))
-    root.bind('<BackSpace>',lambda e: mw.main.nextName())
+    # root.bind('<BackSpace>',lambda e: mw.main.nextName())
     mw.pack(padx=10, pady=10)
     #root.after_idle(wm.checkForModuleUpdates)
     root.mainloop()
