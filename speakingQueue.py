@@ -62,17 +62,32 @@ class Tools(Main):
         self.initFrames()
 
         self.scrollBar = ttk.Scrollbar(self.searchFrame, orient=tk.VERTICAL)
-        self.guiNameList = tk.Listbox(self.searchFrame, listvariable=self.nlVar, height=10, yscrollcommand=self.scrollBar.set, selectmode=tk.SINGLE)
-        self.guiNameList.activate(1)
+        self.guiNameList = tk.Listbox(self.searchFrame, listvariable=self.nlVar, height=10, width=30, yscrollcommand=self.scrollBar.set, selectmode=tk.SINGLE, activestyle="none")
+        self.selection = 0
+        self.guiNameList.select_set(self.selection)
+
         self.buttons = [tk.Button(self.buttonFrame, padx = 5) for count in range(2)]
-        self.buttons[0].config(text="Add", command=lambda: _main.addName(self.getCurselection()))
-        self.buttons[1].config(text="Next", command=lambda: _main.nextName())
+        self.buttons[0].config(text="Add", command=lambda: _main.addName(self.getCurselection()), takefocus=False)
+        self.buttons[1].config(text="Next", command=lambda: _main.nextName(), takefocus=False)
         self.scrollBar.config(command=self.guiNameList.yview)
-        self.searchBar = tk.Entry(self.searchFrame, textvariable=self.searchTerm)
+        self.searchBar = tk.Entry(self.searchFrame, textvariable=self.searchTerm, takefocus=False)
 
         self.packMe()
+        
 
         self.update_list()
+
+    def OnEntryDown(self, event):
+        if self.selection < self.guiNameList.size()-1:
+            self.guiNameList.select_clear(self.selection)
+            self.selection += 1
+            self.guiNameList.select_set(self.selection)
+
+    def OnEntryUp(self, event):
+        if self.selection > 0:
+            self.guiNameList.select_clear(self.selection)
+            self.selection -= 1
+            self.guiNameList.select_set(self.selection)
 
     def update_list(self):
         term = self.searchTerm.get()
@@ -91,6 +106,7 @@ class Tools(Main):
                         self.guiNameList.insert(tk.END, item)
                     
         self.guiNameList.select_set(0)
+        self.selection = 0
 
     def initFrames(self):
         self.buttonFrame = tk.Frame(self)
@@ -99,8 +115,8 @@ class Tools(Main):
     def packMe(self):
         self.searchBar.pack(side=tk.BOTTOM, anchor="sw", fill=tk.X)
         self.scrollBar.pack(side=tk.LEFT, anchor="nw", fill=tk.Y)
-        self.guiNameList.pack(side=tk.LEFT, anchor="nw")
-        self.searchFrame.pack(side=tk.LEFT, anchor="nw")
+        self.guiNameList.pack(side=tk.LEFT, anchor="nw", fill=tk.X)
+        self.searchFrame.pack(side=tk.LEFT, anchor="nw", fill=tk.X)
         self.buttonFrame.pack(side=tk.LEFT, anchor="nw")
         self.buttons[0].pack()
         self.buttons[1].pack()
@@ -147,6 +163,8 @@ if __name__ == "__main__":
     root.geometry("{}x{}".format(DIMENSIONS[0],DIMENSIONS[1]))
     mw = MainApplication(root)
     root.bind('<Return>',lambda e: mw.main.addName(mw.tools.getCurselection()))
+    root.bind("<Down>", mw.tools.OnEntryDown)
+    root.bind("<Up>", mw.tools.OnEntryUp)
     # root.bind('<BackSpace>',lambda e: mw.main.nextName())
     mw.pack(padx=10, pady=10)
     #root.after_idle(wm.checkForModuleUpdates)
