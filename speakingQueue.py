@@ -15,7 +15,7 @@ class Name():
     def __init__(self, canvas, y, stringInput):
         self.tag = "n-%d" % id(self)
         self.canvas = canvas
-        self.obj = canvas.create_text((0, y), text=stringInput[0], font=FONT, anchor="nw", tags=("name", self.tag))
+        self.obj = canvas.create_text((40, y), text=stringInput[0], font=FONT, anchor="nw", tags=("name", self.tag))
     def moveUp(self):
         self.canvas.move(self.tag, 0, -TEXTSPACING)
 
@@ -25,7 +25,7 @@ class Main(tk.Frame):
         print("Main Class")
         tk.Frame.__init__(self, parent, *args, **kwargs)
         self.y = 0
-        self.queue = tk.Canvas(parent, width = 400, height = DIMENSIONS[0])
+        self.queue = tk.Canvas(parent, width = 350, height = DIMENSIONS[0], )
         self.queueList = list()
         self.queue.pack(side=tk.RIGHT)
         
@@ -62,17 +62,32 @@ class Tools(Main):
         self.initFrames()
 
         self.scrollBar = ttk.Scrollbar(self.searchFrame, orient=tk.VERTICAL)
-        self.guiNameList = tk.Listbox(self.searchFrame, listvariable=self.nlVar, height=10, yscrollcommand=self.scrollBar.set, selectmode=tk.SINGLE)
-        self.guiNameList.activate(1)
+        self.guiNameList = tk.Listbox(self.searchFrame, listvariable=self.nlVar, height=10, width=30, yscrollcommand=self.scrollBar.set, selectmode=tk.SINGLE, activestyle="none")
+        self.selection = 0
+        self.guiNameList.select_set(self.selection)
+
         self.buttons = [tk.Button(self.buttonFrame, padx = 5) for count in range(2)]
-        self.buttons[0].config(text="Add", command=lambda: _main.addName(self.getCurselection()))
-        self.buttons[1].config(text="Next", command=lambda: _main.nextName())
+        self.buttons[0].config(text="Add", command=lambda: _main.addName(self.getCurselection()), takefocus=False)
+        self.buttons[1].config(text="Next", command=lambda: _main.nextName(), takefocus=False)
         self.scrollBar.config(command=self.guiNameList.yview)
-        self.searchBar = tk.Entry(self.searchFrame, textvariable=self.searchTerm)
+        self.searchBar = tk.Entry(self.searchFrame, textvariable=self.searchTerm, takefocus=False)
 
         self.packMe()
+        
 
         self.update_list()
+
+    def OnEntryDown(self, event):
+        if self.selection < self.guiNameList.size()-1:
+            self.guiNameList.select_clear(self.selection)
+            self.selection += 1
+            self.guiNameList.select_set(self.selection)
+
+    def OnEntryUp(self, event):
+        if self.selection > 0:
+            self.guiNameList.select_clear(self.selection)
+            self.selection -= 1
+            self.guiNameList.select_set(self.selection)
 
     def update_list(self):
         term = self.searchTerm.get()
@@ -91,6 +106,7 @@ class Tools(Main):
                         self.guiNameList.insert(tk.END, item)
                     
         self.guiNameList.select_set(0)
+        self.selection = 0
 
     def initFrames(self):
         self.buttonFrame = tk.Frame(self)
@@ -99,8 +115,8 @@ class Tools(Main):
     def packMe(self):
         self.searchBar.pack(side=tk.BOTTOM, anchor="sw", fill=tk.X)
         self.scrollBar.pack(side=tk.LEFT, anchor="nw", fill=tk.Y)
-        self.guiNameList.pack(side=tk.LEFT, anchor="nw")
-        self.searchFrame.pack(side=tk.LEFT, anchor="nw")
+        self.guiNameList.pack(side=tk.LEFT, anchor="nw", fill=tk.X)
+        self.searchFrame.pack(side=tk.LEFT, anchor="nw", fill=tk.X)
         self.buttonFrame.pack(side=tk.LEFT, anchor="nw")
         self.buttons[0].pack()
         self.buttons[1].pack()
@@ -129,9 +145,28 @@ class MainApplication(tk.Frame):
         self.parent = parent
         self.tools = Tools(self, self.main)
 
+        self.menubar = tk.Menu(self)
+        self.addToMenuBar()
+
         
         self.main.pack()
         self.tools.pack()
+
+    def addToMenuBar(self):
+        self.file_menu = tk.Menu(self.menubar, tearoff=0)
+        self.file_menu.add_command(label="Import", command=lambda: print("Not implemented yet"), accelerator="Ctrl+O")
+        self.file_menu.add_command(label="Exit", command=lambda: print("Exit"), accelerator="Alt+F4")
+        self.menubar.add_cascade(label="File", menu=self.file_menu)
+
+        self.edit_menu = tk.Menu(self.menubar, tearoff=0)
+        self.edit_menu.add_command(label="Font", command=lambda: print("Change Font"))
+        self.menubar.add_cascade(label="Edit", menu=self.edit_menu)
+
+        self.help_menu = tk.Menu(self.menubar, tearoff=0)
+        self.help_menu.add_command(label="Overview", command=lambda: print("Overview command"))
+        self.help_menu.add_command(label="Verison", command=lambda: print("Show verison number"))
+        self.help_menu.add_command(label="About", command=lambda: print("About command"))
+        self.menubar.add_cascade(label="Help", menu=self.help_menu)
  
     # def checkForModuleUpdates(self):
     #     <check for updates>
@@ -146,7 +181,10 @@ if __name__ == "__main__":
     TEXTSPACING = 40
     root.geometry("{}x{}".format(DIMENSIONS[0],DIMENSIONS[1]))
     mw = MainApplication(root)
+    root.config(menu=mw.menubar)
     root.bind('<Return>',lambda e: mw.main.addName(mw.tools.getCurselection()))
+    root.bind("<Down>", mw.tools.OnEntryDown)
+    root.bind("<Up>", mw.tools.OnEntryUp)
     # root.bind('<BackSpace>',lambda e: mw.main.nextName())
     mw.pack(padx=10, pady=10)
     #root.after_idle(wm.checkForModuleUpdates)
