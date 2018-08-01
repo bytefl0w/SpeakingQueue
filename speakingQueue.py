@@ -11,6 +11,20 @@ import time
 import logging
 import os
 
+class TopFont(tk.Toplevel):
+    def __init__(self, parent, *args, **kwargs):
+        tk.Toplevel.__init__(self, parent, *args, **kwargs)
+        self.title("Font")
+        self.msg = tk.Message(self, text="This is where changing the font will go")
+        self.msg.pack()
+
+class TopAbout(tk.Toplevel):
+    def __init__(self, parent, *args, **kwargs):
+        tk.Toplevel.__init__(self, parent, *args, **kwargs)
+        self.title("About")
+        self.msg = tk.Message(self, text="Speaking Queue application\nMade by: Erik Mortimer\nVersion: 0.8")
+        self.msg.pack()
+
 class Name():
     def __init__(self, canvas, y, stringInput):
         self.tag = "n-%d" % id(self)
@@ -141,6 +155,7 @@ class Tools(Main):
 class MainApplication(tk.Frame):
     def __init__(self, parent, *args, **kwargs):
         tk.Frame.__init__(self, parent, *args, **kwargs)
+        self.parent = parent
         self.main = Main(self)
         self.parent = parent
         self.tools = Tools(self, self.main)
@@ -155,17 +170,16 @@ class MainApplication(tk.Frame):
     def addToMenuBar(self):
         self.file_menu = tk.Menu(self.menubar, tearoff=0)
         self.file_menu.add_command(label="Import", command=lambda: print("Not implemented yet"), accelerator="Ctrl+O")
-        self.file_menu.add_command(label="Exit", command=lambda: print("Exit"), accelerator="Alt+F4")
+        self.file_menu.add_command(label="Exit", command=lambda: self.parent.destroy, accelerator="Alt+F4")
         self.menubar.add_cascade(label="File", menu=self.file_menu)
 
         self.edit_menu = tk.Menu(self.menubar, tearoff=0)
-        self.edit_menu.add_command(label="Font", command=lambda: print("Change Font"))
+        self.edit_menu.add_command(label="Font", command=lambda: TopFont(self))
         self.menubar.add_cascade(label="Edit", menu=self.edit_menu)
 
         self.help_menu = tk.Menu(self.menubar, tearoff=0)
-        self.help_menu.add_command(label="Overview", command=lambda: print("Overview command"))
-        self.help_menu.add_command(label="Verison", command=lambda: print("Show verison number"))
-        self.help_menu.add_command(label="About", command=lambda: print("About command"))
+        self.help_menu.add_command(label="Overview", command=lambda: print("Overview command"), accelerator="F1")
+        self.help_menu.add_command(label="About", command=lambda: TopAbout(self), accelerator="F2")
         self.menubar.add_cascade(label="Help", menu=self.help_menu)
  
     # def checkForModuleUpdates(self):
@@ -190,3 +204,4 @@ if __name__ == "__main__":
     #root.after_idle(wm.checkForModuleUpdates)
     root.mainloop()
     print("Closing applicaton...")
+
