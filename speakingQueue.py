@@ -7,6 +7,7 @@
 import tkinter as tk
 from tkinter import ttk
 from tkinter import font
+from tkinter import filedialog
 import time
 import logging
 import os
@@ -68,7 +69,7 @@ class Tools(Main):
         # Init vars
         tk.Frame.__init__(self, parent, *args, **kwargs)
         self.nameList = []
-        self.parseFile()
+        self.parseFile("names.txt")
         self.nlVar = tk.StringVar(value=self.nameList)
         self.searchTerm = tk.StringVar()
         self.searchTerm.trace("w", lambda name, index, mode: self.update_list())
@@ -111,13 +112,20 @@ class Tools(Main):
         for item in self.nameList:
             if len(term) == 0:
                 self.guiNameList.insert(tk.END, item)
-            if term.isupper():
+            elif term.isupper():
                 if len(term) == 1:
                     if item.split()[0][0] == term[0]:
                         self.guiNameList.insert(tk.END, item)
                 elif len(term) == 2:
                     if item.split()[0][0] == term[0] and item.split()[1][0] == term[1]:
                         self.guiNameList.insert(tk.END, item)
+                elif term in item:
+                    self.guiNameList.insert(tk.END, item)
+            elif term.islower():
+                if term in item.lower():
+                    self.guiNameList.insert(tk.END, item)
+            elif term in item:
+                self.guiNameList.insert(tk.END, item)
                     
         self.guiNameList.select_set(0)
         self.selection = 0
@@ -135,15 +143,17 @@ class Tools(Main):
         self.buttons[0].pack()
         self.buttons[1].pack()
         
-
-
-    def parseFile(self):
+    def parseFile(self, fileName):
         print("Start parsing file...")
-        with open("names.txt", "r") as file:
-           line = next(file, None)
-           while line:
-               self.nameList.append(line) 
-               line = next(file, None)
+        self.nameList = []
+        if (os.path.exists(str(fileName))):
+            with open(str(fileName), "r") as file:
+                line = next(file, None)
+                while line:
+                    self.nameList.append(line) 
+                    line = next(file, None)
+        else:
+            print("WARNING: can't find names.txt file in directory!")
 
     def getCurselection(self):
         items = self.guiNameList.curselection()
@@ -162,14 +172,13 @@ class MainApplication(tk.Frame):
 
         self.menubar = tk.Menu(self)
         self.addToMenuBar()
-
         
         self.main.pack()
         self.tools.pack()
 
     def addToMenuBar(self):
         self.file_menu = tk.Menu(self.menubar, tearoff=0)
-        self.file_menu.add_command(label="Import", command=lambda: print("Not implemented yet"), accelerator="Ctrl+O")
+        self.file_menu.add_command(label="Import", command=self.load_file, accelerator="Ctrl+O")
         self.file_menu.add_command(label="Exit", command=self.parent.destroy, accelerator="Alt+F4")
         self.menubar.add_cascade(label="File", menu=self.file_menu)
 
@@ -181,6 +190,16 @@ class MainApplication(tk.Frame):
         self.help_menu.add_command(label="Overview", command=lambda: print("Overview command"), accelerator="F1")
         self.help_menu.add_command(label="About", command=lambda: TopAbout(self), accelerator="F2")
         self.menubar.add_cascade(label="Help", menu=self.help_menu)
+
+    def load_file(self):
+        fname = filedialog.askopenfilename(initialdir=os.getcwd(),title="Import file",filetypes=(("Text files","*.txt"),("All files","*.*")), multiple=False)
+
+        if fname:
+            print("Import " + fname)
+            fileName = str(fname)
+            mw.tools.parseFile(fileName)
+            mw.tools.update_list()
+        return
  
     # def checkForModuleUpdates(self):
     #     <check for updates>
@@ -192,6 +211,7 @@ if __name__ == "__main__":
     root.title("Speaking Queue")
     DIMENSIONS = [800, 600]
     FONT = font.Font(family='Helvetica', size='18', weight='bold')
+    FILENAME = "names.txt"
     TEXTSPACING = 40
     root.geometry("{}x{}".format(DIMENSIONS[0],DIMENSIONS[1]))
     mw = MainApplication(root)
