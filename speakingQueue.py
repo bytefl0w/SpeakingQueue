@@ -170,7 +170,7 @@ class MainApplication(tk.Frame):
     def addToMenuBar(self):
         self.file_menu = tk.Menu(self.menubar, tearoff=0)
         self.file_menu.add_command(label="Import", command=lambda: print("Not implemented yet"), accelerator="Ctrl+O")
-        self.file_menu.add_command(label="Exit", command=lambda: self.parent.destroy, accelerator="Alt+F4")
+        self.file_menu.add_command(label="Exit", command=self.parent.destroy, accelerator="Alt+F4")
         self.menubar.add_cascade(label="File", menu=self.file_menu)
 
         self.edit_menu = tk.Menu(self.menubar, tearoff=0)
