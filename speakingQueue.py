@@ -8,9 +8,11 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import font
 from tkinter import filedialog
+
 import time
 import logging
 import os
+
 
 class TopFont(tk.Toplevel):
     def __init__(self, parent, *args, **kwargs):
@@ -25,6 +27,7 @@ class TopAbout(tk.Toplevel):
         self.title("About")
         self.msg = tk.Message(self, text="Speaking Queue application\nMade by: Erik Mortimer\nVersion: 0.8")
         self.msg.pack()
+
 
 class Name():
     def __init__(self, canvas, y, stringInput):
@@ -41,6 +44,7 @@ class Main(tk.Frame):
         tk.Frame.__init__(self, parent, *args, **kwargs)
         self.y = 0
         self.queue = tk.Canvas(parent, width = 350, height = DIMENSIONS[0], )
+
         self.queueList = list()
         self.queue.pack(side=tk.RIGHT)
         
@@ -200,7 +204,7 @@ class MainApplication(tk.Frame):
             mw.tools.parseFile(fileName)
             mw.tools.update_list()
         return
- 
+
     # def checkForModuleUpdates(self):
     #     <check for updates>
     #     self.after(100, self.checkForModuleUpdates)
