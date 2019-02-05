@@ -12,7 +12,8 @@ from tkinter import filedialog
 import time
 import logging
 import os
-
+import threading
+import sqlite3
 
 class TopFont(tk.Toplevel):
     def __init__(self, parent, *args, **kwargs):
@@ -31,9 +32,10 @@ class TopAbout(tk.Toplevel):
 
 class Name():
     def __init__(self, canvas, y, stringInput):
-        self.tag = "n-%d" % id(self)
+        self.tag = stringInput
         self.canvas = canvas
         self.obj = canvas.create_text((40, y), text=stringInput[0], font=FONT, anchor="nw", tags=("name", self.tag))
+        self.getText = self.canvas.itemcget(self.obj, 'text')
     def moveUp(self):
         self.canvas.move(self.tag, 0, -TEXTSPACING)
 
@@ -43,7 +45,7 @@ class Main(tk.Frame):
         print("Main Class")
         tk.Frame.__init__(self, parent, *args, **kwargs)
         self.y = 0
-        self.queue = tk.Canvas(parent, width = 350, height = DIMENSIONS[0], )
+        self.queue = tk.Canvas(parent, width = 450, height = DIMENSIONS[0], relief=tk.RAISED, background="white")
 
         self.queueList = list()
         self.queue.pack(side=tk.RIGHT)
@@ -62,6 +64,13 @@ class Main(tk.Frame):
                 items.moveUp()
             self.y -= TEXTSPACING
 
+    def deleteName(self):
+        if self.queueList:
+            self.queue.delete(self.queueList[0].obj)
+            self.queueList.pop(0)
+            for items in self.queueList:
+                items.moveUp()
+            self.y -= TEXTSPACING
         
 
 # TODO: Add more to comment when features are implemented 
@@ -72,8 +81,14 @@ class Tools(Main):
 
         # Init vars
         tk.Frame.__init__(self, parent, *args, **kwargs)
+        self.main = _main
         self.nameList = []
         self.parseFile("names.txt")
+        self.timesSpoken = {}
+
+        for self.x in self.nameList:
+            self.timesSpoken[self.x] = 0
+        #print(self.timesSpoken)
         self.nlVar = tk.StringVar(value=self.nameList)
         self.searchTerm = tk.StringVar()
         self.searchTerm.trace("w", lambda name, index, mode: self.update_list())
@@ -81,20 +96,51 @@ class Tools(Main):
         self.initFrames()
 
         self.scrollBar = ttk.Scrollbar(self.searchFrame, orient=tk.VERTICAL)
-        self.guiNameList = tk.Listbox(self.searchFrame, listvariable=self.nlVar, height=10, width=30, yscrollcommand=self.scrollBar.set, selectmode=tk.SINGLE, activestyle="none")
+        self.scrollBarSpoken = ttk.Scrollbar(self.spokenFrame, orient=tk.VERTICAL)
+        self.guiNameList = tk.Listbox(self.searchFrame, listvariable=self.nlVar, height=15, width=35, yscrollcommand=self.scrollBar.set, selectmode=tk.SINGLE, activestyle="none")
         self.selection = 0
         self.guiNameList.select_set(self.selection)
 
-        self.buttons = [tk.Button(self.buttonFrame, padx = 5) for count in range(2)]
-        self.buttons[0].config(text="Add", command=lambda: _main.addName(self.getCurselection()), takefocus=False)
-        self.buttons[1].config(text="Next", command=lambda: _main.nextName(), takefocus=False)
+        self.buttons = [tk.Button(self.buttonFrame, padx = 7, pady = 3) for count in range(4)]
+        self.buttons[0].config(text="Add", command=lambda: _main.addName(self.getCurselection()), takefocus=False, width=7)
+        self.buttons[1].config(text="Next", command=lambda: self.nextNameClick(_main.queueList[0].getText), takefocus=False, width=7)
+        self.buttons[2].config(text="Delete", command=lambda: _main.deleteName(), takefocus=False, width=7)
+        self.buttons[3].config(text="Clear", command=lambda: self.clearSpoken(), takefocus=False, width=7)
         self.scrollBar.config(command=self.guiNameList.yview)
-        self.searchBar = tk.Entry(self.searchFrame, textvariable=self.searchTerm, takefocus=False)
+        self.searchBar = tk.Entry(self.searchFrame, textvariable=self.searchTerm, takefocus=True)
+        
+        self.tree = ttk.Treeview(self.spokenFrame, yscrollcommand=self.scrollBarSpoken.set, selectmode=tk.BROWSE)
 
+        self.tree["columns"]=("spoken")
+        self.tree.column("spoken", width=100)
+        self.tree.heading("spoken", text="Spoken")
+        self.treeList = []
+        for self.nameListIdx in range(len(self.nameList)-1):
+            #print(self.nameListIdx)
+            self.treeList.append(self.tree.insert("", int(self.nameListIdx), text=str(self.nameList[self.nameListIdx]), values=(str(self.timesSpoken[self.nameList[self.nameListIdx]]))))
+
+        #self.tree.insert("", 0, text="Line 1", values=("1A","1b"))
+        #self.id2 = self.tree.insert("", 1, "dir2", text="Dir 2")
+        #self.tree.insert(self.id2, "end", "dir 2", text="sub dir 2", values=("2A","2B"))
+        self.scrollBarSpoken.config(command=self.tree.yview)
         self.packMe()
         
 
         self.update_list()
+    
+    def nextNameClick(self, stringInput):
+        self.timesSpoken[stringInput] += 1
+        self.z = 0
+        while self.nameList[self.z] != stringInput:
+            self.z += 1
+        self.tree.set(self.treeList[self.z],column="spoken",value=(str(self.timesSpoken[stringInput])))
+        self.main.nextName()
+
+    def clearSpoken(self):
+        for item in self.treeList:
+            self.tree.set(item, column="spoken", value="0")
+        for self.x in self.nameList:
+            self.timesSpoken[self.x] = 0
 
     def OnEntryDown(self, event):
         if self.selection < self.guiNameList.size()-1:
@@ -137,15 +183,24 @@ class Tools(Main):
     def initFrames(self):
         self.buttonFrame = tk.Frame(self)
         self.searchFrame = tk.Frame(self, height=400)
+        self.spokenFrame = tk.Frame(self, height=300)
         
     def packMe(self):
-        self.searchBar.pack(side=tk.BOTTOM, anchor="sw", fill=tk.X)
-        self.scrollBar.pack(side=tk.LEFT, anchor="nw", fill=tk.Y)
-        self.guiNameList.pack(side=tk.LEFT, anchor="nw", fill=tk.X)
-        self.searchFrame.pack(side=tk.LEFT, anchor="nw", fill=tk.X)
-        self.buttonFrame.pack(side=tk.LEFT, anchor="nw")
+        self.searchBar.pack(side=tk.BOTTOM, anchor="e", fill=tk.X)
+        self.spokenFrame.pack(side=tk.BOTTOM, anchor="s")
+        self.scrollBar.pack(side=tk.LEFT, anchor="e", fill=tk.Y)
+        self.scrollBarSpoken.pack(side=tk.LEFT, anchor="e", fill=tk.Y)
+        self.guiNameList.pack(side=tk.LEFT, anchor="e", fill=tk.X)
+        self.searchFrame.pack(side=tk.LEFT, anchor="e", fill=tk.X)
+
+        self.buttonFrame.pack(side=tk.LEFT, anchor="n")
         self.buttons[0].pack()
         self.buttons[1].pack()
+        self.buttons[2].pack()
+        self.buttons[3].pack()
+        
+        self.tree.pack()
+        
         
     def parseFile(self, fileName):
         print("Start parsing file...")
@@ -154,7 +209,7 @@ class Tools(Main):
             with open(str(fileName), "r") as file:
                 line = next(file, None)
                 while line:
-                    self.nameList.append(line) 
+                    self.nameList.append(line.strip("\n")) 
                     line = next(file, None)
         else:
             print("WARNING: can't find names.txt file in directory!")
@@ -171,14 +226,12 @@ class MainApplication(tk.Frame):
         tk.Frame.__init__(self, parent, *args, **kwargs)
         self.parent = parent
         self.main = Main(self)
-        self.parent = parent
         self.tools = Tools(self, self.main)
-
         self.menubar = tk.Menu(self)
         self.addToMenuBar()
         
-        self.main.pack()
-        self.tools.pack()
+        self.main.pack(side=tk.RIGHT)
+        self.tools.pack(side=tk.LEFT, anchor="nw")
 
     def addToMenuBar(self):
         self.file_menu = tk.Menu(self.menubar, tearoff=0)
@@ -213,16 +266,19 @@ if __name__ == "__main__":
     root = tk.Tk()
     print("Starting up application...")
     root.title("Speaking Queue")
-    DIMENSIONS = [800, 600]
-    FONT = font.Font(family='Helvetica', size='18', weight='bold')
+    DIMENSIONS = [1280, 720]
+    FONT = font.Font(family='Courier New', size='24', weight='bold')
     FILENAME = "names.txt"
-    TEXTSPACING = 40
+    TEXTSPACING = 50
     root.geometry("{}x{}".format(DIMENSIONS[0],DIMENSIONS[1]))
     mw = MainApplication(root)
     root.config(menu=mw.menubar)
     root.bind('<Return>',lambda e: mw.main.addName(mw.tools.getCurselection()))
+    root.bind('<Delete>',lambda e: mw.main.deleteName())
     root.bind("<Down>", mw.tools.OnEntryDown)
     root.bind("<Up>", mw.tools.OnEntryUp)
+    root.bind('<Shift-Return>',lambda e:  mw.tools.nextNameClick(mw.main.queueList[0].getText))
+    root.bind('<Control-Alt-Return>', lambda e: mw.tools.clearSpoken())
     # root.bind('<BackSpace>',lambda e: mw.main.nextName())
     mw.pack(padx=10, pady=10)
     #root.after_idle(wm.checkForModuleUpdates)
